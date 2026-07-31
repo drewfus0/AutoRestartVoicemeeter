@@ -1,0 +1,187 @@
+<Window x:Class="AutoRestartVoicemeeter.UI.LogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AutoRestart VoiceMeeter"
+        Height="520" Width="780"
+        MinHeight="300" MinWidth="480"
+        WindowStartupLocation="CenterScreen"
+        Background="#0D0D1A"
+        Foreground="#E2E8F0"
+        ShowInTaskbar="True"
+        Closing="Window_Closing">
+
+    <Window.Resources>
+
+        <!-- ── Shared colours ──────────────────────────────────────────────── -->
+        <SolidColorBrush x:Key="BgDeep"   Color="#0D0D1A"/>
+        <SolidColorBrush x:Key="BgPanel"  Color="#111128"/>
+        <SolidColorBrush x:Key="Border"   Color="#1E1E3A"/>
+        <SolidColorBrush x:Key="TextDim"  Color="#475569"/>
+        <SolidColorBrush x:Key="TextMid"  Color="#94A3B8"/>
+        <SolidColorBrush x:Key="TextBright" Color="#E2E8F0"/>
+
+        <!-- ── Reusable button style ───────────────────────────────────────── -->
+        <Style x:Key="FlatBtn" TargetType="Button">
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="Background" Value="#1A1A33"/>
+            <Setter Property="BorderBrush" Value="#2A2A4A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="16,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#252545"/>
+                                <Setter Property="Foreground" Value="#E2E8F0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#303060"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── Green accent button (restart) ─────────────────────────────── -->
+        <Style x:Key="GreenBtn" TargetType="Button" BasedOn="{StaticResource FlatBtn}">
+            <Setter Property="Background"   Value="#0A2A1A"/>
+            <Setter Property="BorderBrush"  Value="#1A5C35"/>
+            <Setter Property="Foreground"   Value="#4ADE80"/>
+        </Style>
+
+        <!-- ── Scroll bar minimal style ───────────────────────────────────── -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="6"/>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- Header         -->
+            <RowDefinition Height="1"/>       <!-- Divider        -->
+            <RowDefinition Height="*"/>       <!-- Log list       -->
+            <RowDefinition Height="1"/>       <!-- Divider        -->
+            <RowDefinition Height="Auto"/>   <!-- Footer toolbar -->
+        </Grid.RowDefinitions>
+
+        <!-- ════════════════════════════ HEADER ════════════════════════════ -->
+        <Border Grid.Row="0" Background="#0A0A18" Padding="18,13">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: title + subtitle -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="🎙" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="AutoRestart VoiceMeeter"
+                                   FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextBright}"/>
+                        <TextBlock Text="System tray monitor  ·  Qudelix-5K detector"
+                                   FontSize="10.5" Foreground="{StaticResource TextDim}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Right: status indicator -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            VerticalAlignment="Center" Margin="0,0,4,0">
+                    <Ellipse x:Name="StatusDot" Width="9" Height="9"
+                             Fill="#4ADE80" Margin="0,0,7,0">
+                        <Ellipse.Effect>
+                            <BlurEffect Radius="3"/>
+                        </Ellipse.Effect>
+                    </Ellipse>
+                    <TextBlock x:Name="StatusLabel" Text="Connected"
+                               FontSize="11.5" Foreground="{StaticResource TextMid}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Divider -->
+        <Rectangle Grid.Row="1" Fill="{StaticResource Border}"/>
+
+        <!-- ════════════════════════════ LOG LIST ═══════════════════════════ -->
+        <ScrollViewer x:Name="Scroller" Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Background="{StaticResource BgDeep}"
+                      Padding="8,6">
+            <ItemsControl x:Name="LogList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="4,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="68"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Timestamp -->
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding TimestampText}"
+                                       Foreground="{StaticResource TextDim}"
+                                       FontFamily="Cascadia Mono, Consolas, Courier New"
+                                       FontSize="11"
+                                       VerticalAlignment="Top"/>
+
+                            <!-- Message -->
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Message}"
+                                       Foreground="{Binding LevelColor}"
+                                       FontFamily="Cascadia Mono, Consolas, Courier New"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       LineHeight="17"/>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Divider -->
+        <Rectangle Grid.Row="3" Fill="{StaticResource Border}"/>
+
+        <!-- ════════════════════════════ FOOTER ════════════════════════════ -->
+        <Border Grid.Row="4" Background="#0A0A18" Padding="14,9">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="EntryCount"
+                           Grid.Column="0"
+                           Text="0 entries"
+                           FontSize="11"
+                           Foreground="{StaticResource TextDim}"
+                           VerticalAlignment="Center"/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="Clear"
+                            Style="{StaticResource FlatBtn}"
+                            Click="Clear_Click"
+                            Margin="0,0,8,0"/>
+                    <Button Content="⟳  Restart Engine"
+                            Style="{StaticResource GreenBtn}"
+                            Click="Restart_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
