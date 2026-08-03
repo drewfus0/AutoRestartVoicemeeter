@@ -1,4 +1,5 @@
 using Microsoft.Win32;
+using AutoRestartVoicemeeter.Core;
 
 namespace AutoRestartVoicemeeter.Services;
 
@@ -21,7 +22,11 @@ public static class StartupService
                 using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: false);
                 return key?.GetValue(AppName) is not null;
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                Logger.Instance.Log($"⚠ Registry read failed details:\n{ex}", LogLevel.Warning);
+                return false;
+            }
         }
         set
         {
@@ -36,7 +41,10 @@ public static class StartupService
                 else
                     key.DeleteValue(AppName, throwOnMissingValue: false);
             }
-            catch { /* Registry access failure is non-critical */ }
+            catch (Exception ex)
+            {
+                Logger.Instance.Log($"⚠ Registry write failed details:\n{ex}", LogLevel.Warning);
+            }
         }
     }
 }

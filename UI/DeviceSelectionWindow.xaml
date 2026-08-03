@@ -74,7 +74,8 @@
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Border x:Name="CardBorder" CornerRadius="6" Padding="12,10" BorderThickness="2"
-                                Background="#1E1E24" BorderBrush="#27272A" Margin="0,2">
+                                Background="#1E1E24" BorderBrush="#27272A" Margin="0,2" Cursor="Hand"
+                                MouseLeftButtonDown="CardBorder_MouseLeftButtonDown">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>

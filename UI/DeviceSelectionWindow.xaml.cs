@@ -20,6 +20,8 @@ public partial class DeviceSelectionWindow : Window
 
         _deviceView = CollectionViewSource.GetDefaultView(DiscoveredDevices);
         _deviceView.Filter = FilterDeviceItem;
+        _deviceView.SortDescriptions.Add(new SortDescription(nameof(DiscoveredDevice.IsSelected), ListSortDirection.Descending));
+        _deviceView.SortDescriptions.Add(new SortDescription(nameof(DiscoveredDevice.Name), ListSortDirection.Ascending));
 
         DeviceListView.ItemsSource = _deviceView;
         LoadDevices();
@@ -27,6 +29,11 @@ public partial class DeviceSelectionWindow : Window
 
     private void LoadDevices()
     {
+        foreach (var dev in DiscoveredDevices)
+        {
+            dev.PropertyChanged -= OnDevicePropertyChanged;
+        }
+
         DiscoveredDevices.Clear();
 
         // Reload fresh settings from disk to reflect saved TargetDevices state
@@ -37,6 +44,7 @@ public partial class DeviceSelectionWindow : Window
 
         foreach (var dev in devices)
         {
+            dev.PropertyChanged += OnDevicePropertyChanged;
             DiscoveredDevices.Add(dev);
         }
 
@@ -45,17 +53,53 @@ public partial class DeviceSelectionWindow : Window
         {
             if (!DiscoveredDevices.Any(d => string.Equals(d.DeviceCode, target.DeviceCode, StringComparison.OrdinalIgnoreCase)))
             {
-                DiscoveredDevices.Add(new DiscoveredDevice
+                var customDev = new DiscoveredDevice
                 {
                     Name = target.Name,
                     DeviceCode = target.DeviceCode,
                     Type = target.Type,
                     IsSelected = target.IsEnabled
-                });
+                };
+                customDev.PropertyChanged += OnDevicePropertyChanged;
+                DiscoveredDevices.Add(customDev);
             }
         }
 
         _deviceView?.Refresh();
+    }
+
+    private void OnDevicePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(DiscoveredDevice.IsSelected))
+        {
+            _deviceView?.Refresh();
+        }
+    }
+
+    private void CardBorder_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        // Ignore if click originated directly on the CheckBox to avoid double-toggle
+        if (e.OriginalSource is DependencyObject original && FindParent<System.Windows.Controls.CheckBox>(original) != null)
+        {
+            return;
+        }
+
+        if (sender is FrameworkElement element && element.DataContext is DiscoveredDevice dev)
+        {
+            dev.IsSelected = !dev.IsSelected;
+            _deviceView?.Refresh();
+        }
+    }
+
+    private static T? FindParent<T>(DependencyObject child) where T : DependencyObject
+    {
+        DependencyObject parent = System.Windows.Media.VisualTreeHelper.GetParent(child);
+        while (parent != null)
+        {
+            if (parent is T typedParent) return typedParent;
+            parent = System.Windows.Media.VisualTreeHelper.GetParent(parent);
+        }
+        return null;
     }
 
     private bool FilterDeviceItem(object item)
@@ -111,6 +155,7 @@ public partial class DeviceSelectionWindow : Window
             Type = DeviceFilterType.Keyword,
             IsSelected = true
         };
+        newDev.PropertyChanged += OnDevicePropertyChanged;
 
         DiscoveredDevices.Add(newDev);
         _deviceView?.Refresh();

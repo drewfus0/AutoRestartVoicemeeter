@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("Silent system tray app that monitors Qudelix-5K connections and auto-restarts the" +
     " VoiceMeeter audio engine."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f15114709167a74a3c576e46a162c6ff71466193")]
 [assembly: System.Reflection.AssemblyProductAttribute("AutoRestartVoicemeeter")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AutoRestartVoicemeeter")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

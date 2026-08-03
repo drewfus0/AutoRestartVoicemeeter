@@ -159,7 +159,7 @@ public sealed class AudioDeviceMonitor : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Instance.Log($"⚠ AudioDeviceMonitor init failed: {ex.Message}", LogLevel.Warning);
+            Logger.Instance.Log($"⚠ AudioDeviceMonitor init failed details:\n{ex}", LogLevel.Warning);
         }
     }
 
@@ -183,7 +183,7 @@ public sealed class AudioDeviceMonitor : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Instance.Log($"⚠ CheckDeviceId error: {ex.Message}", LogLevel.Warning);
+            Logger.Instance.Log($"⚠ CheckDeviceId error details:\n{ex}", LogLevel.Warning);
         }
     }
 
@@ -214,7 +214,7 @@ public sealed class AudioDeviceMonitor : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Instance.Log($"⚠ Audio endpoints enumeration failed: {ex.Message}", LogLevel.Warning);
+            Logger.Instance.Log($"⚠ Audio endpoints enumeration failed details:\n{ex}", LogLevel.Warning);
         }
 
         return result;

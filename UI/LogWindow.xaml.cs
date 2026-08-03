@@ -1,5 +1,5 @@
-using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Media;
 using AutoRestartVoicemeeter.Core;
 using AutoRestartVoicemeeter.Services;
@@ -7,43 +7,19 @@ using MediaColor = System.Windows.Media.Color;
 
 namespace AutoRestartVoicemeeter.UI;
 
-// ── View-model for a single log row ───────────────────────────────────────────
-public sealed class LogEntryVm
-{
-    public string TimestampText { get; }
-    public string Message       { get; }
-    public string LevelColor    { get; }
-
-    public LogEntryVm(LogEntry entry)
-    {
-        TimestampText = entry.Timestamp.ToString("HH:mm:ss");
-        Message       = entry.Message;
-        LevelColor    = entry.Level switch
-        {
-            LogLevel.Success => "#4ADE80",  // green
-            LogLevel.Warning => "#FBBF24",  // amber
-            LogLevel.Error   => "#F87171",  // red-pink
-            _                => "#94A3B8",  // slate (info)
-        };
-    }
-}
-
 // ── Log window code-behind ─────────────────────────────────────────────────────
 public partial class LogWindow : Window
 {
     private readonly RestartService _restart;
-    private readonly ObservableCollection<LogEntryVm> _items = [];
 
     public LogWindow(RestartService restart)
     {
         _restart = restart;
         InitializeComponent();
 
-        LogList.ItemsSource = _items;
-
         // Populate with history
         foreach (var e in Logger.Instance.Entries)
-            _items.Add(new LogEntryVm(e));
+            AddLogToDocument(e);
 
         UpdateFooter();
         ScrollToEnd();
@@ -58,10 +34,40 @@ public partial class LogWindow : Window
     private void OnEntryAdded(object? sender, LogEntry entry)
     {
         // Logger already marshals to dispatcher; this runs on UI thread
-        _items.Add(new LogEntryVm(entry));
+        AddLogToDocument(entry);
         UpdateFooter();
         ScrollToEnd();
         UpdateStatusIndicator();
+    }
+
+    private void AddLogToDocument(LogEntry entry)
+    {
+        var p = new Paragraph();
+
+        // Timestamp Run
+        var timeStr = entry.Timestamp.ToString("HH:mm:ss");
+        var timeRun = new Run(timeStr + "  ")
+        {
+            Foreground = (SolidColorBrush)FindResource("TextDim")
+        };
+        p.Inlines.Add(timeRun);
+
+        // Message Run
+        var colorStr = entry.Level switch
+        {
+            LogLevel.Success => "#4ADE80",  // green
+            LogLevel.Warning => "#FBBF24",  // amber
+            LogLevel.Error   => "#F87171",  // red-pink
+            _                => "#94A3B8",  // slate (info)
+        };
+        var color = (MediaColor)System.Windows.Media.ColorConverter.ConvertFromString(colorStr);
+        var messageRun = new Run(entry.Message)
+        {
+            Foreground = new SolidColorBrush(color)
+        };
+        p.Inlines.Add(messageRun);
+
+        LogDocument.Blocks.Add(p);
     }
 
     // ── Header status indicator ────────────────────────────────────────────────
@@ -106,16 +112,44 @@ public partial class LogWindow : Window
 
     // ── Helpers ────────────────────────────────────────────────────────────────
     private void UpdateFooter()
-        => EntryCount.Text = $"{_items.Count} {(_items.Count == 1 ? "entry" : "entries")}";
+    {
+        int count = Logger.Instance.Entries.Count;
+        EntryCount.Text = $"{count} {(count == 1 ? "entry" : "entries")}";
+    }
 
     private void ScrollToEnd()
         => Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded,
-                                  () => Scroller.ScrollToEnd());
+                                  () => LogBox.ScrollToEnd());
 
     // ── Button handlers ────────────────────────────────────────────────────────
+    private void Copy_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!LogBox.Selection.IsEmpty)
+            {
+                LogBox.Copy();
+            }
+            else
+            {
+                var textRange = new TextRange(LogDocument.ContentStart, LogDocument.ContentEnd);
+                string text = textRange.Text.Trim();
+                if (!string.IsNullOrEmpty(text))
+                {
+                    System.Windows.Clipboard.SetText(text);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Instance.Log($"⚠ Failed to copy to clipboard: {ex.Message}", LogLevel.Warning);
+        }
+    }
+
     private void Clear_Click(object sender, RoutedEventArgs e)
     {
-        _items.Clear();
+        Logger.Instance.Entries.Clear();
+        LogDocument.Blocks.Clear();
         UpdateFooter();
     }
 

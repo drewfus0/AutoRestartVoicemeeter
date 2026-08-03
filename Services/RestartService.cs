@@ -86,7 +86,7 @@ public sealed class RestartService : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Instance.Log($"✗ Restart exception: {ex.Message}", LogLevel.Error);
+            Logger.Instance.Log($"✗ Restart exception details:\n{ex}", LogLevel.Error);
             RestartFailed?.Invoke(ex.Message);
         }
     }

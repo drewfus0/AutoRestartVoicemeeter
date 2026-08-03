@@ -76,7 +76,7 @@ public sealed class VoicemeeterApi : IDisposable
         catch (Exception ex)
         {
             StatusMessage = $"DLL load error: {ex.Message}";
-            Log($"✗ DLL load failed: {ex.Message}", LogLevel.Error);
+            Log($"✗ DLL load failed details:\n{ex}", LogLevel.Error);
         }
     }
 
@@ -165,7 +165,7 @@ public sealed class VoicemeeterApi : IDisposable
             }
             catch (Exception ex)
             {
-                Log($"✗ Login exception: {ex.Message}", LogLevel.Error);
+                Log($"✗ Login exception details:\n{ex}", LogLevel.Error);
                 return false;
             }
         }
@@ -206,11 +206,15 @@ public sealed class VoicemeeterApi : IDisposable
             try
             {
                 var r = _setFloat(paramName, value);
+                if (r != 0)
+                {
+                    Log($"✗ SetParameterFloat({paramName}, {value}) failed with code {r}.", LogLevel.Error);
+                }
                 return r == 0;
             }
             catch (Exception ex)
             {
-                Log($"✗ SetParameterFloat({paramName}): {ex.Message}", LogLevel.Error);
+                Log($"✗ SetParameterFloat({paramName}) exception details:\n{ex}", LogLevel.Error);
                 return false;
             }
         }
@@ -228,11 +232,15 @@ public sealed class VoicemeeterApi : IDisposable
             try
             {
                 var r = _getFloat(paramName, out float v);
+                if (r != 0)
+                {
+                    Log($"✗ GetParameterFloat({paramName}) failed with code {r}.", LogLevel.Error);
+                }
                 return r == 0 ? v : null;
             }
             catch (Exception ex)
             {
-                Log($"✗ GetParameterFloat({paramName}): {ex.Message}", LogLevel.Error);
+                Log($"✗ GetParameterFloat({paramName}) exception details:\n{ex}", LogLevel.Error);
                 return null;
             }
         }

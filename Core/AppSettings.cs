@@ -48,7 +48,7 @@ public class AppSettings
         }
         catch (Exception ex)
         {
-            Logger.Instance.Log($"⚠ Failed to load settings.json: {ex.Message}", LogLevel.Warning);
+            Logger.Instance.Log($"⚠ Failed to load settings.json details:\n{ex}", LogLevel.Warning);
         }
 
         var defaultSettings = new AppSettings();
@@ -72,7 +72,7 @@ public class AppSettings
         }
         catch (Exception ex)
         {
-            Logger.Instance.Log($"⚠ Failed to save settings: {ex.Message}", LogLevel.Warning);
+            Logger.Instance.Log($"⚠ Failed to save settings details:\n{ex}", LogLevel.Warning);
         }
     }
 

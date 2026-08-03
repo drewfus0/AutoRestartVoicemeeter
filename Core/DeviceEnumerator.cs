@@ -200,7 +200,7 @@ public static class DeviceEnumerator
         }
         catch (Exception ex)
         {
-            Logger.Instance.Log($"⚠ Error enumerating PnP devices: {ex.Message}", LogLevel.Warning);
+            Logger.Instance.Log($"⚠ Error enumerating PnP devices details:\n{ex}", LogLevel.Warning);
         }
         finally
         {

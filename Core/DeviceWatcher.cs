@@ -128,7 +128,7 @@ public sealed class DeviceWatcher : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Instance.Log($"⚠ WM_DEVICECHANGE parse error: {ex.Message}", LogLevel.Warning);
+            Logger.Instance.Log($"⚠ WM_DEVICECHANGE parse error details:\n{ex}", LogLevel.Warning);
         }
 
         return IntPtr.Zero;

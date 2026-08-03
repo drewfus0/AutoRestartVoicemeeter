@@ -118,41 +118,27 @@
         <Rectangle Grid.Row="1" Fill="{StaticResource Border}"/>
 
         <!-- ════════════════════════════ LOG LIST ═══════════════════════════ -->
-        <ScrollViewer x:Name="Scroller" Grid.Row="2"
-                      VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled"
-                      Background="{StaticResource BgDeep}"
-                      Padding="8,6">
-            <ItemsControl x:Name="LogList">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Margin="4,2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="68"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <!-- Timestamp -->
-                            <TextBlock Grid.Column="0"
-                                       Text="{Binding TimestampText}"
-                                       Foreground="{StaticResource TextDim}"
-                                       FontFamily="Cascadia Mono, Consolas, Courier New"
-                                       FontSize="11"
-                                       VerticalAlignment="Top"/>
-
-                            <!-- Message -->
-                            <TextBlock Grid.Column="1"
-                                       Text="{Binding Message}"
-                                       Foreground="{Binding LevelColor}"
-                                       FontFamily="Cascadia Mono, Consolas, Courier New"
-                                       FontSize="11"
-                                       TextWrapping="Wrap"
-                                       LineHeight="17"/>
-                        </Grid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        <RichTextBox x:Name="LogBox" Grid.Row="2"
+                     IsReadOnly="True"
+                     Background="{StaticResource BgDeep}"
+                     Foreground="{StaticResource TextBright}"
+                     BorderThickness="0"
+                     VerticalScrollBarVisibility="Auto"
+                     HorizontalScrollBarVisibility="Disabled"
+                     FocusVisualStyle="{x:Null}"
+                     IsDocumentEnabled="True"
+                     Padding="8,6">
+            <RichTextBox.Resources>
+                <Style TargetType="Paragraph">
+                    <Setter Property="Margin" Value="68,2,0,2"/>
+                    <Setter Property="TextIndent" Value="-68"/>
+                    <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, Courier New"/>
+                    <Setter Property="FontSize" Value="11"/>
+                    <Setter Property="LineHeight" Value="17"/>
+                </Style>
+            </RichTextBox.Resources>
+            <FlowDocument x:Name="LogDocument" PagePadding="0"/>
+        </RichTextBox>
 
         <!-- Divider -->
         <Rectangle Grid.Row="3" Fill="{StaticResource Border}"/>
@@ -173,6 +159,10 @@
                            VerticalAlignment="Center"/>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="Copy"
+                            Style="{StaticResource FlatBtn}"
+                            Click="Copy_Click"
+                            Margin="0,0,8,0"/>
                     <Button Content="Clear"
                             Style="{StaticResource FlatBtn}"
                             Click="Clear_Click"
