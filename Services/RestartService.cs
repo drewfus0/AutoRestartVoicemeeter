@@ -37,7 +37,7 @@ public sealed class RestartService : IDisposable
     public void OnQudelixArrived(object? sender, EventArgs e)
     {
         Logger.Instance.Log(
-            $"⏱ Qudelix arrival — arming {DebounceMs / 1000}s debounce…", LogLevel.Info);
+            $"⏱ Qudelix arrival — arming {(DebounceMs / 1000.0):F1}s debounce…", LogLevel.Info);
 
         lock (_timerLock)
         {

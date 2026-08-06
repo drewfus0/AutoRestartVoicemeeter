@@ -183,6 +183,49 @@ public sealed class VoicemeeterApi : IDisposable
     }
 
     /// <summary>
+    /// Logs into the VoiceMeeter API, waiting and retrying if Voicemeeter is not yet ready.
+    /// Use <see cref="Login"/> for instant (non-retrying) attempts.
+    /// </summary>
+    public async Task<bool> LoginWithRetryAsync(int maxRetries = 10, int delayMs = 500)
+    {
+        if (_login is null) return false;
+
+        for (int attempt = 0; attempt < maxRetries; attempt++)
+        {
+            var r = _login();
+            // 0 = OK, 1 = launched VM, 2 = already open by another app
+            if (r >= 0)
+            {
+                _loggedIn = true;
+                StatusMessage = "Connected to VoiceMeeter";
+                Log($"✓ VoiceMeeter API login OK on attempt {attempt + 1} (code {r})", LogLevel.Success);
+                return true;
+            }
+
+            if (r == -2)
+            {
+                // -2 = Voicemeeter not running / API socket not ready yet — retry after delay
+                if (attempt < maxRetries - 1)
+                {
+                    Log($"⏳ Voicemeeter not ready (login code {-2}), retrying {attempt + 1}/{maxRetries} in {delayMs}ms…", LogLevel.Info);
+                    await Task.Delay(delayMs).ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                // Other error codes are likely permanent — give up immediately
+                StatusMessage = $"VoiceMeeter login returned {r}";
+                Log($"⚠ VoiceMeeter login returned {r} – is VoiceMeeter running?", LogLevel.Warning);
+                return false;
+            }
+        }
+
+        StatusMessage = "Voicemeeter API not ready after retries";
+        Log($"✗ Voicemeeter login still returning {-2} after {maxRetries} attempts. Is VoiceMeeter running?", LogLevel.Error);
+        return false;
+    }
+
+    /// <summary>
     /// Sends <c>Command.Restart = 1</c> to restart the VoiceMeeter audio engine.
     /// Also invalidates the Bus A3 gain cache so the post-restart gain is re-read
     /// from VoiceMeeter on the next volume key press.
@@ -202,12 +245,29 @@ public sealed class VoicemeeterApi : IDisposable
         if (_setFloat is null) return false;
         lock (_lock)
         {
-            EnsureLoggedIn();
+            bool wasLoggedIn = _loggedIn;
+            var loginOk = EnsureLoggedIn();
             try
             {
                 var r = _setFloat(paramName, value);
-                if (r != 0)
+                if (r < 0)
                 {
+                    _loggedIn = false;
+                    if (wasLoggedIn)
+                    {
+                        Log($"⚠ SetParameterFloat({paramName}, {value}) failed with code {r}. Session might be stale; attempting re-login and retry…", LogLevel.Warning);
+                        // When the session is stale, do a full reconnect with retries
+                        // in case Voicemeeter's API socket isn't ready yet (-2 = not ready).
+                        if (LoginWithRetry(3, 1000))
+                        {
+                            r = _setFloat(paramName, value);
+                            if (r == 0)
+                            {
+                                Log($"✓ SetParameterFloat({paramName}, {value}) succeeded after re-login.", LogLevel.Success);
+                                return true;
+                            }
+                        }
+                    }
                     Log($"✗ SetParameterFloat({paramName}, {value}) failed with code {r}.", LogLevel.Error);
                 }
                 return r == 0;
@@ -228,12 +288,26 @@ public sealed class VoicemeeterApi : IDisposable
         if (_getFloat is null) return null;
         lock (_lock)
         {
+            bool wasLoggedIn = _loggedIn;
             EnsureLoggedIn();
             try
             {
                 var r = _getFloat(paramName, out float v);
-                if (r != 0)
+                if (r < 0)
                 {
+                    _loggedIn = false;
+                    if (wasLoggedIn)
+                    {
+                        Log($"⚠ GetParameterFloat({paramName}) failed with code {r}. Session might be stale; attempting re-login and retry…", LogLevel.Warning);
+                        if (Login())
+                        {
+                            r = _getFloat(paramName, out v);
+                            if (r == 0)
+                            {
+                                return v;
+                            }
+                        }
+                    }
                     Log($"✗ GetParameterFloat({paramName}) failed with code {r}.", LogLevel.Error);
                 }
                 return r == 0 ? v : null;
@@ -286,7 +360,43 @@ public sealed class VoicemeeterApi : IDisposable
     public void InvalidateBusA3Cache() => _busA3GainCache = null;
 
     // ── Helpers ────────────────────────────────────────────────────────────────
-    private void EnsureLoggedIn() { if (!_loggedIn) Login(); }
+    private bool EnsureLoggedIn()
+    {
+        if (_loggedIn) return true;
+        return Login();
+    }
+
+    /// <summary>
+    /// Blocking login with retries when Voicemeeter's API socket is not yet ready (-2).
+    /// Retries up to <paramref name="maxRetries"/> times with <paramref name="delayMs"/> between attempts.
+    /// </summary>
+    private bool LoginWithRetry(int maxRetries, int delayMs)
+    {
+        for (int attempt = 0; attempt < maxRetries; attempt++)
+        {
+            var r = _login?.Invoke() ?? -1;
+            if (r >= 0)
+            {
+                _loggedIn = true;
+                StatusMessage = "Connected to VoiceMeeter";
+                Log($"✓ Login OK on retry attempt {attempt + 1} (code {r})", LogLevel.Success);
+                return true;
+            }
+
+            if (r == -2)
+            {
+                if (attempt < maxRetries - 1)
+                    Log($"⏳ API not ready, retrying {attempt + 1}/{maxRetries} in {delayMs}ms…", LogLevel.Info);
+            }
+            else
+                return false; // non-retryable error
+
+            System.Threading.Thread.Sleep(delayMs);
+        }
+        StatusMessage = "Voicemeeter API not ready after retries";
+        Log($"✗ Login still returning -2 after {maxRetries} attempts", LogLevel.Error);
+        return false;
+    }
 
     private static void Log(string msg, LogLevel level)
         => Logger.Instance.Log(msg, level);
