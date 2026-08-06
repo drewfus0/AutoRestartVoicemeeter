@@ -1,5 +1,6 @@
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Microsoft.Win32;
 
 namespace AutoRestartVoicemeeter.Core;
@@ -358,6 +359,62 @@ public sealed class VoicemeeterApi : IDisposable
     /// Call this after an engine restart or if the gain may have been changed externally.
     /// </summary>
     public void InvalidateBusA3Cache() => _busA3GainCache = null;
+
+    /// <summary>
+    /// Tests the connection to the VoiceMeeter API by querying a universal parameter.
+    /// </summary>
+    public bool TestConnection(out string message)
+    {
+        if (!IsAvailable)
+        {
+            message = "DLL not loaded (Voicemeeter Remote API DLL is missing or failed to load).";
+            return false;
+        }
+
+        // Call GetParameterFloat to test a live read. Option.Delay is standard, 
+        // but Strip[0].Mute is universally supported across Basic, Banana, and Potato.
+        float? val = GetParameterFloat("Strip[0].Mute");
+        if (val.HasValue)
+        {
+            message = $"Active. Connection verified (Strip[0].Mute = {val.Value}).";
+            return true;
+        }
+
+        lock (_lock)
+        {
+            if (!_loggedIn)
+            {
+                message = $"Not connected (Status: {StatusMessage}).";
+                return false;
+            }
+        }
+
+        message = $"Communication failed (Status: {StatusMessage}).";
+        return false;
+    }
+
+    /// <summary>
+    /// Performs a full logout and login cycle to reconnect to the VoiceMeeter API.
+    /// </summary>
+    public async Task<bool> ReconnectAsync()
+    {
+        Log("🔄 Reconnecting to VoiceMeeter API...", LogLevel.Info);
+        lock (_lock)
+        {
+            Logout();
+        }
+
+        bool ok = await LoginWithRetryAsync(5, 500).ConfigureAwait(false);
+        if (ok)
+        {
+            Log("✓ VoiceMeeter API reconnected successfully.", LogLevel.Success);
+        }
+        else
+        {
+            Log("✗ VoiceMeeter API reconnection failed.", LogLevel.Error);
+        }
+        return ok;
+    }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
     private bool EnsureLoggedIn()

@@ -11,10 +11,12 @@ namespace AutoRestartVoicemeeter.UI;
 public partial class LogWindow : Window
 {
     private readonly RestartService _restart;
+    private readonly VoicemeeterApi _api;
 
-    public LogWindow(RestartService restart)
+    public LogWindow(RestartService restart, VoicemeeterApi api)
     {
         _restart = restart;
+        _api = api;
         InitializeComponent();
 
         // Populate with history
@@ -155,6 +157,33 @@ public partial class LogWindow : Window
 
     private void Restart_Click(object sender, RoutedEventArgs e)
         => _restart.ManualRestart();
+
+    private void Test_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Instance.Log("🔍 Testing Voicemeeter API status...", LogLevel.Info);
+        bool ok = _api.TestConnection(out string msg);
+        if (ok)
+        {
+            Logger.Instance.Log($"✓ API Status: {msg}", LogLevel.Success);
+        }
+        else
+        {
+            Logger.Instance.Log($"✗ API Status: {msg}", LogLevel.Error);
+        }
+    }
+
+    private async void Reconnect_Click(object sender, RoutedEventArgs e)
+    {
+        ReconnectBtn.IsEnabled = false;
+        try
+        {
+            await _api.ReconnectAsync();
+        }
+        finally
+        {
+            ReconnectBtn.IsEnabled = true;
+        }
+    }
 
     // ── Close to tray (hide instead of destroy) ────────────────────────────────
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

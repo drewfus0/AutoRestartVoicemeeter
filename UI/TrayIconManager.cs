@@ -165,7 +165,7 @@ public sealed class TrayIconManager : IDisposable
         System.Windows.Application.Current.Dispatcher.Invoke(() =>
         {
             if (_logWindow is null || !_logWindow.IsLoaded)
-                _logWindow = new LogWindow(_restart);
+                _logWindow = new LogWindow(_restart, _api);
 
             _logWindow.Show();
             _logWindow.Activate();

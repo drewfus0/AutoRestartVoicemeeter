@@ -167,6 +167,16 @@
                             Style="{StaticResource FlatBtn}"
                             Click="Clear_Click"
                             Margin="0,0,8,0"/>
+                    <Button x:Name="TestBtn"
+                            Content="🔍 Test API"
+                            Style="{StaticResource FlatBtn}"
+                            Click="Test_Click"
+                            Margin="0,0,8,0"/>
+                    <Button x:Name="ReconnectBtn"
+                            Content="🔗 Reconnect API"
+                            Style="{StaticResource FlatBtn}"
+                            Click="Reconnect_Click"
+                            Margin="0,0,8,0"/>
                     <Button Content="⟳  Restart Engine"
                             Style="{StaticResource GreenBtn}"
                             Click="Restart_Click"/>
